@@ -27,15 +27,13 @@ void run_diffusion_equation_on_grid(double **initial_concetration_grid, double *
             for (int column = 1; column < GRID_SIZE - 1; column++)
                 next_concentration_grid[row][column] = diffusion_equation(initial_concetration_grid, row, column);
 
-        double average_diffusion = 0., result;
+        double average_diffusion = 0.;
 
-        // #pragma omp parallel for collapse(2) reduction(+ : average_diffusion)
+#pragma omp parallel for collapse(2) reduction(+ : average_diffusion)
         for (int i = 1; i < GRID_SIZE - 1; i++)
             for (int j = 1; j < GRID_SIZE - 1; j++)
             {
-                result = fabs(next_concentration_grid[i][j] - initial_concetration_grid[i][j]);
-                average_diffusion += result;
-                //
+                average_diffusion += fabs(next_concentration_grid[i][j] - initial_concetration_grid[i][j]);
                 initial_concetration_grid[i][j] = next_concentration_grid[i][j];
             }
 
