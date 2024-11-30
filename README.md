@@ -1,17 +1,16 @@
 # Projeto PCD: Simulação e Análise de Modelos de Difusão de Contaminantes em Água
 
-## Profs. Álvaro e Denise (Turmas I e N)
+# Objetivo
 
-**Objetivo**: Criar uma simulação que modele a difusão de contaminantes em um corpo d'água (como um lago ou rio), aplicando conceitos de paralelismo para acelerar o cálculo e observar o comportamento de poluentes ao longo do tempo. O projeto investigará o impacto de OpenMP, CUDA e MPI no tempo de execução e na precisão do modelo.
+Criar uma simulação que modele a difusão de contaminantes em um corpo d'água (como um lago ou rio), aplicando conceitos de paralelismo para acelerar o cálculo e observar o comportamento de poluentes ao longo do tempo. O projeto investigará o impacto de OpenMP, CUDA e MPI no tempo de execução e na precisão do modelo.
 
-## Etapas do Projeto
+# Etapas do Projeto
 
 ### 1. Estudo do Modelo de Difusão
 
 - Estudar a Equação de Difusão/Transporte transiente, representada por:
-  $$
-  \frac{\partial C}{\partial t} = D \cdot \nabla^2 C
-  $$
+
+$$\frac{\partial C}{\partial t} = D \cdot \nabla^2 C$$
 
 Onde:
 
@@ -48,96 +47,21 @@ A equação diferencial pode ser aproximada (discretizada) no tempo e no espaço
 - Discutir as vantagens e limitações de cada abordagem, observando a escalabilidade, precisão e aplicabilidade em simulações ambientais.
 - Demonstrar visualmente os resultados que comprovem a corretude da simulação. -**Entrega Final**: entregar o resultado final no formato de artigo científico (modelo a ser disponibilizado).
 
-## Ponto de Partida para a Implementação da Equação
+# Ponto de Partida para a Implementação da Equação
 
 Para aproximar a Equação de Difusão, podemos usar a seguinte fórmula de diferenças finitas central:
 
 $$
-C_{i,j}^{t+1} = C_{i,j}^t + D \cdot \Delta t \left( \frac{C_{i+1,j}^t + C_{i-1,j}^t + C_{i,j+1}^t + C_{i,j-1}^t - 4 \cdot C_{i,j}^t}{\Delta x^2} \right)
+
+C*{i,j}^{t+1} = C*{i,j}^t + D \cdot \Delta t \left( \frac{C*{i+1,j}^t + C*{i-1,j}^t + C*{i,j+1}^t + C*{i,j-1}^t - 4 \cdot C\_{i,j}^t}{\Delta x^2} \right)
+
+
 $$
 
-Abaixo está um trecho de código em C para uma implementação sequencial simples, o qual calcula a difusão do contaminante em uma grade de 2000x2000 ao longo de 500 ciclos. A concentração inicial está configurada no centro da grade, e o coeficiente de difusão \(D\) pode ser ajustado conforme necessário.
+No arquivo `src/sample.c` tem uma implementação sequencial simples, o qual calcula a difusão do contaminante em uma grade de 2000x2000 ao longo de 500 ciclos. A concentração inicial está configurada no centro da grade, e o coeficiente de difusão \(D\) pode ser ajustado conforme necessário.
 
-```C
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
-#define N 2000  // Tamanho da grade
-#define T 500 // Número de iterações no tempo
-#define D 0.1  // Coeficiente de difusão
-#define DELTA_T 0.01
-#define DELTA_X 1.0
+Comando para executar o exemplo:
 
-void diff_eq(double **C, double **C_new) { //diff_eq(double C[N][N], double C_new[N][N]) {
-    for (int t = 0; t < T; t++) {
-        for (int i = 1; i < N - 1; i++) {
-            for (int j = 1; j < N - 1; j++) {
-                C_new[i][j] = C[i][j] + D * DELTA_T * (
-                    (C[i+1][j] + C[i-1][j] + C[i][j+1] + C[i][j-1] - 4 * C[i][j]) / (DELTA_X * DELTA_X)
-                );
-            }
-        }
-        // Atualizar matriz para a próxima iteração
-        double difmedio = 0.;
-        for (int i = 1; i < N - 1; i++) {
-            for (int j = 1; j < N - 1; j++) {
-                difmedio += fabs(C_new[i][j] - C[i][j]);
-                C[i][j] = C_new[i][j];
-            }
-        }
-        if ((t%100) == 0)
-          printf("interacao %d - diferenca=%g\n", t, difmedio/((N-2)*(N-2)));
-    }
-}
-
-int main() {
-
-    // Concentração inicial
-    double **C = (double **)malloc(N * sizeof(double *));
-    if (C == NULL) {
-      fprintf(stderr, "Memory allocation failed\n");
-      return 1;
-    }
-    for (int i = 0; i < N; i++) {
-      C[i] = (double *)malloc(N * sizeof(double));
-      if (C[i] == NULL) {
-        fprintf(stderr, "Memory allocation failed\n");
-        return 1;
-      }
-    }
-    for (int i = 0; i < N; i++) {
-      for (int j = 0; j < N; j++) {
-        C[i][j] = 0.;
-      }
-    }
-
-    // Concentração para a próxima iteração
-    double **C_new = (double **)malloc(N * sizeof(double *));
-    if (C_new == NULL) {
-      fprintf(stderr, "Memory allocation failed\n");
-      return 1;
-    }
-    for (int i = 0; i < N; i++) {
-      C_new[i] = (double *)malloc(N * sizeof(double));
-      if (C_new[i] == NULL) {
-        fprintf(stderr, "Memory allocation failed\n");
-        return 1;
-      }
-    }
-    for (int i = 0; i < N; i++) {
-      for (int j = 0; j < N; j++) {
-        C_new[i][j] = 0.;
-      }
-    }
-
-    // Inicializar uma concentração alta no centro
-    C[N/2][N/2] = 1.0;
-
-    // Executar as iterações no tempo para a equação de difusão
-    diff_eq(C, C_new);
-
-    // Exibir resultado para verificação
-    printf("Concentração final no centro: %f\n", C[N/2][N/2]);
-    return 0;
-}
+```bash
+make sample
 ```
