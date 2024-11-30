@@ -51,12 +51,7 @@ A equação diferencial pode ser aproximada (discretizada) no tempo e no espaço
 
 Para aproximar a Equação de Difusão, podemos usar a seguinte fórmula de diferenças finitas central:
 
-$$
-
-C*{i,j}^{t+1} = C*{i,j}^t + D \cdot \Delta t \left( \frac{C*{i+1,j}^t + C*{i-1,j}^t + C*{i,j+1}^t + C*{i,j-1}^t - 4 \cdot C\_{i,j}^t}{\Delta x^2} \right)
-
-
-$$
+$$C*{i,j}^{t+1} = C*{i,j}^t + D \cdot \Delta t \left( \frac{C*{i+1,j}^t + C*{i-1,j}^t + C*{i,j+1}^t + C*{i,j-1}^t - 4 \cdot C\_{i,j}^t}{\Delta x^2} \right)$$
 
 No arquivo `src/sample.c` tem uma implementação sequencial simples, o qual calcula a difusão do contaminante em uma grade de 2000x2000 ao longo de 500 ciclos. A concentração inicial está configurada no centro da grade, e o coeficiente de difusão \(D\) pode ser ajustado conforme necessário.
 
