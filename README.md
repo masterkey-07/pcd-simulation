@@ -29,23 +29,31 @@ A equação diferencial pode ser aproximada (discretizada) no tempo e no espaço
 
 ### 3. Implementação com OpenMP (Simulação Local em CPU)
 
-- Usar OpenMP para paralelizar o cálculo de difusão entre os núcleos da CPU. Cada núcleo processa uma parte da grade, aplicando as regras de difusão às células sob sua responsabilidade. -**Entrega 1**: demonstrar o código em OpenMP e apresentar avaliação de desempenho com relação à versão sequencial.
+- Usar OpenMP para paralelizar o cálculo de difusão entre os núcleos da CPU. Cada núcleo processa uma parte da grade, aplicando as regras de difusão às células sob sua responsabilidade.
+
+-**Entrega 1**: demonstrar o código em OpenMP e apresentar avaliação de desempenho com relação à versão sequencial.
 
 ### 4. Implementação com CUDA (Simulação em GPU)
 
 - Implementar a simulação em CUDA, onde cada célula da grade é processada por uma thread independente na GPU, utilizando um esquema de diferenças finitas para calcular o laplaciano de \(C\).
-- A execução em GPU permite simular uma grade maior e observar o ganho de desempenho com CUDA. -**Entrega 2**: demonstrar o código em CUDA e apresentar avaliação de desempenho com relação às versões anteriores.
+- A execução em GPU permite simular uma grade maior e observar o ganho de desempenho com CUDA.
+
+-**Entrega 2**: demonstrar o código em CUDA e apresentar avaliação de desempenho com relação às versões anteriores.
 
 ### 5. Distribuição com MPI (Simulação em Larga Escala)
 
 - Dividir a grade em sub-regiões e distribuir o processamento entre várias máquinas usando MPI.
-- Cada máquina processa uma seção do corpo d'água e troca informações nas bordas com as máquinas vizinhas para garantir a continuidade da difusão de contaminantes entre as regiões. -**Entrega 3**: demonstrar o código em MPI hibrido (pode incluir trechos em OpenMP e CUDA) e apresentar avaliação de desempenho com relação às versões anteriores, porém destacando a escalabilidade possível apenas com MPI.
+- Cada máquina processa uma seção do corpo d'água e troca informações nas bordas com as máquinas vizinhas para garantir a continuidade da difusão de contaminantes entre as regiões.
+
+-**Entrega 3**: demonstrar o código em MPI hibrido (pode incluir trechos em OpenMP e CUDA) e apresentar avaliação de desempenho com relação às versões anteriores, porém destacando a escalabilidade possível apenas com MPI.
 
 ### 6. Artigo científico e Discussão dos Resultados
 
 - Criar gráficos que mostrem a evolução da concentração ao longo do tempo e comparar o tempo de execução entre as implementações.
 - Discutir as vantagens e limitações de cada abordagem, observando a escalabilidade, precisão e aplicabilidade em simulações ambientais.
-- Demonstrar visualmente os resultados que comprovem a corretude da simulação. -**Entrega Final**: entregar o resultado final no formato de artigo científico (modelo a ser disponibilizado).
+- Demonstrar visualmente os resultados que comprovem a corretude da simulação.
+
+-**Entrega Final**: entregar o resultado final no formato de artigo científico (modelo a ser disponibilizado).
 
 # Ponto de Partida para a Implementação da Equação
 
