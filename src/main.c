@@ -1,99 +1,78 @@
 #include <omp.h>
-#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include "../include/grid.h"
+#include "../include/diffusion_equation.h"
 
-#define GRID_SIZE 2000
-#define ITERATIONS 500
-#define DIFFUSION_COEFFICIENT 0.1
-#define DELTA_T 0.01
-#define DELTA_X 1.0
-
-double diffusion_equation(double **grid, int row, int column)
+int run_simulation(int size, int iterations, int threads, double (*reader)[2])
 {
-    return grid[row][column] + DIFFUSION_COEFFICIENT * DELTA_T * ((grid[row + 1][column] + grid[row - 1][column] + grid[row][column + 1] + grid[row][column - 1] - 4 * grid[row][column]) / (DELTA_X * DELTA_X));
-}
+    int maximum_threads = omp_get_num_procs();
 
-void run_diffusion_equation_on_grid(double **initial_concetration_grid, double **next_concentration_grid)
-{
+    double start, end, **start_grid, **next_grid;
 
-    omp_set_num_threads(12);
+    omp_set_num_threads(maximum_threads);
 
-    for (int iteration = 0; iteration < ITERATIONS; iteration++)
+    start_grid = create_grid(size);
+
+    if (start_grid == NULL)
+        return 1;
+
+    next_grid = create_grid(size);
+
+    if (next_grid == NULL)
+        return 1;
+
+    start_grid[size / 2][size / 2] = 1.0;
+
+    start = omp_get_wtime();
+
+    if (threads <= 1)
+        run_sequencial_diffusion_equation_on_grid(start_grid, next_grid, size, iterations);
+    else
     {
+        omp_set_num_threads(threads);
 
-#pragma omp parallel for
-        for (int row = 1; row < GRID_SIZE - 1; row++)
-            for (int column = 1; column < GRID_SIZE - 1; column++)
-                next_concentration_grid[row][column] = diffusion_equation(initial_concetration_grid, row, column);
-
-        double average_diffusion = 0.;
-
-#pragma omp parallel for reduction(+ : average_diffusion)
-        for (int i = 1; i < GRID_SIZE - 1; i++)
-            for (int j = 1; j < GRID_SIZE - 1; j++)
-            {
-                average_diffusion += fabs(next_concentration_grid[i][j] - initial_concetration_grid[i][j]);
-                initial_concetration_grid[i][j] = next_concentration_grid[i][j];
-            }
-
-        if ((iteration % 100) == 0)
-            printf("Iteração %d: Diferença = %g\n", iteration, average_diffusion / ((GRID_SIZE - 2) * (GRID_SIZE - 2)));
-    }
-}
-
-double **create_concentration_grid()
-{
-    double **grid = (double **)malloc(GRID_SIZE * sizeof(double *));
-
-    if (grid == NULL)
-    {
-        fprintf(stderr, "Memory allocation failed\n");
-        return NULL;
+        run_parallelized_diffusion_equation_on_grid(start_grid, next_grid, size, iterations);
     }
 
-    for (int index = 0; index < GRID_SIZE; index++)
-    {
-        grid[index] = (double *)malloc(GRID_SIZE * sizeof(double));
+    end = omp_get_wtime();
 
-        if (grid[index] == NULL)
-        {
-            fprintf(stderr, "Memory allocation failed\n");
-            return NULL;
-        }
-    }
+    (*reader)[0] = end - start;
+    (*reader)[1] = start_grid[size / 2][size / 2];
 
-#pragma omp parallel for collapse(2)
-    for (int row = 0; row < GRID_SIZE; row++)
-        for (int column = 0; column < GRID_SIZE; column++)
-            grid[row][column] = 0.;
+    omp_set_num_threads(maximum_threads);
 
-    return grid;
+    free_grid(start_grid, size);
+    free_grid(next_grid, size);
+
+    return 0;
 }
 
 int main()
 {
-    double start, end;
+    double reader[2];
 
-    double **initial_concentration_grid = create_concentration_grid();
+    int result, maximum_threads = omp_get_num_procs();
 
-    if (initial_concentration_grid == NULL)
-        return 1;
+    FILE *output = fopen("data/output.csv", "w");
 
-    double **next_concentration_grid = create_concentration_grid();
+    fprintf(output, "threads,grid_size,iterations,time,concentration\n");
 
-    if (next_concentration_grid == NULL)
-        return 1;
+    for (int thread = 2; thread <= maximum_threads; thread = thread + 1)
+        for (int size = 2000; size <= 4000; size = size + 1000)
+            for (int iteration = 300; iteration <= 1200; iteration = iteration + 300)
+            {
+                result = run_simulation(size, iteration, thread, &reader);
 
-    initial_concentration_grid[GRID_SIZE / 2][GRID_SIZE / 2] = 1.0;
+                if (result == 1)
+                    return 1;
 
-    start = omp_get_wtime();
+                fprintf(output, "%d,%d,%d,%lf,%lf\n", thread, size, iteration, reader[0], reader[1]);
 
-    run_diffusion_equation_on_grid(initial_concentration_grid, next_concentration_grid);
+                fflush(output);
+            }
 
-    end = omp_get_wtime();
-
-    printf("(%lfs) Concentração final no centro: %f\n", end - start, initial_concentration_grid[GRID_SIZE / 2][GRID_SIZE / 2]);
+    fclose(output);
 
     return 0;
 }

@@ -1,8 +1,6 @@
-#include <omp.h>
-#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-
+#include <math.h>
 #define N 2000 // Tamanho da grade
 #define T 500  // Número de iterações no tempo
 #define D 0.1  // Coeficiente de difusão
@@ -89,14 +87,10 @@ int main()
     // Inicializar uma concentração alta no centro
     C[N / 2][N / 2] = 1.0;
 
-    double start = omp_get_wtime();
-
     // Executar as iterações no tempo para a equação de difusão
     diff_eq(C, C_new);
 
-    double end = omp_get_wtime();
-
     // Exibir resultado para verificação
-    printf("(%lfs) Concentração final no centro: %f\n", end - start, C[N / 2][N / 2]);
+    printf("Concentração final no centro: %f\n", C[N / 2][N / 2]);
     return 0;
 }
