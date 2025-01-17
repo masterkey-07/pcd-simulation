@@ -3,63 +3,44 @@
 #include <cuda_runtime.h>
 
 #define RADIUS 1
-#define BLOCK_SIZE 8
 
 #define DELTA_T 0.01
 #define DELTA_X 1.0
 #define DIFFUSION_COEFFICIENT 0.1
 
-// Kernel CUDA para aplicar stencil 2D
-__global__ void
-run_diff_equation_on_grid(const double *input_grid, double *output_grid, int size)
+__global__ void run_diff_equation_on_grid(float *input_grid, float *output_grid, int grid_size, int block_size)
 {
-    __shared__ double shared_grid[BLOCK_SIZE + 2][BLOCK_SIZE + 2];
+    extern __shared__ float shared[];
 
-    // Coordenadas globais
-    int globalX = blockIdx.x * BLOCK_SIZE + threadIdx.x;
-    int globalY = blockIdx.y * BLOCK_SIZE + threadIdx.y;
+    int shared_size = block_size + 2;
 
-    // Coordenadas locais
-    int localX = threadIdx.x + 1;
-    int localY = threadIdx.y + 1;
+    int grid_x = blockIdx.x * block_size + threadIdx.x;
+    int grid_y = blockIdx.y * block_size + threadIdx.y;
 
-    // Carregar os dados principais para a memória compartilhada
-    if (globalX < size && globalY < size)
-        shared_grid[localY][localX] = input_grid[globalY * size + globalX];
+    int x = threadIdx.x + 1;
+    int y = threadIdx.y + 1;
+
+    if (grid_x < grid_size && grid_y < grid_size)
+        shared[shared_size * y + x] = input_grid[grid_y * grid_size + grid_x];
     else
-        shared_grid[localY][localX] = 0.0f;
+        shared[shared_size * y + x] = 0.0f;
 
-    // Carregar as bordas
     if (threadIdx.x == 0)
     {
-        shared_grid[localY][threadIdx.x] = (globalX > 0) ? input_grid[globalY * size + (globalX - 1)] : 0.0f;
-        shared_grid[localY][threadIdx.x + BLOCK_SIZE + 1] = (globalX + BLOCK_SIZE < size) ? input_grid[globalY * size + (globalX + BLOCK_SIZE)] : 0.0f;
+        shared[shared_size * y] = (grid_x > 0) ? input_grid[grid_y * grid_size + (grid_x - 1)] : 0.0f;
+        shared[shared_size * (y + 1) - 1] = (grid_x + block_size < grid_size) ? input_grid[grid_y * grid_size + (grid_x + block_size)] : 0.0f;
     }
 
     if (threadIdx.y == 0)
     {
-        shared_grid[threadIdx.y][localX] = (globalY > 0) ? input_grid[(globalY - 1) * size + globalX] : 0.0f;
-        shared_grid[threadIdx.y + BLOCK_SIZE + 1][localX] = (globalY + BLOCK_SIZE < size) ? input_grid[(globalY + BLOCK_SIZE) * size + globalX] : 0.0f;
+        shared[x] = (grid_y > 0) ? input_grid[(grid_y - 1) * grid_size + grid_x] : 0.0f;
+        shared[shared_size * (shared_size - 1) + x] = (grid_y + block_size < grid_size) ? input_grid[(grid_y + block_size) * grid_size + grid_x] : 0.0f;
     }
 
     __syncthreads();
 
-    // Aplicar stencil
-    if (globalX > 0 && globalX < size - 1 && globalY > 0 && globalY < size - 1)
-        output_grid[globalY * size + globalX] = shared_grid[localY][localX] + DIFFUSION_COEFFICIENT * DELTA_T * ((shared_grid[localY + 1][localX] + shared_grid[localY - 1][localX] + shared_grid[localY][localX + 1] + shared_grid[localY][localX - 1] - 4 * shared_grid[localY][localX]) / (DELTA_X * DELTA_X));
-}
-
-void printMatrix(const char *label, double *matrix, int size)
-{
-    printf("%s:\n", label);
-    for (int i = 0; i < size; i++)
-    {
-        for (int j = 0; j < size; j++)
-        {
-            printf("%lf ", matrix[i * size + j]);
-        }
-        printf("\n");
-    }
+    if (grid_x > 0 && grid_x < grid_size - 1 && grid_y > 0 && grid_y < grid_size - 1)
+        output_grid[grid_size * grid_y + grid_x] = shared[shared_size * y + x] + DIFFUSION_COEFFICIENT * DELTA_T * ((shared[shared_size * (y + 1) + x] + shared[shared_size * (y - 1) + x] + shared[shared_size * y + (x + 1)] + shared[shared_size * y + (x - 1)] - 4 * shared[shared_size * y + x]) / (DELTA_X * DELTA_X));
 }
 
 int main()
@@ -69,45 +50,44 @@ int main()
     size_t size = 2000;
     size_t total_size = size * size;
 
-    // Alocar e inicializar a matriz no host
-    double *input_grid = (double *)malloc(total_size * sizeof(double));
-    double *output_grid = (double *)malloc(total_size * sizeof(double));
+    int block_size = 8;
+
+    int grid_memory_size = total_size * sizeof(float);
+    int shared_memory_size = (block_size + 2) * (block_size + 2) * sizeof(float);
+
+    float *host_input_grid = (float *)malloc(grid_memory_size);
+    float *host_output_grid = (float *)malloc(grid_memory_size);
 
     for (int i = 0; i < total_size; i++)
-        input_grid[i] = 0.;
+        host_input_grid[i] = 0.;
 
-    input_grid[total_size % 2 == 0 ? (total_size / 2) - (size / 2) : total_size / 2] = 1.0;
+    host_input_grid[total_size % 2 == 0 ? (total_size / 2) - (size / 2) : total_size / 2] = 1.0;
 
-    // Alocar memória no dispositivo
-    double *cuda_input_grid, *cuda_output_grid;
-    cudaMalloc(&cuda_input_grid, total_size * sizeof(double));
-    cudaMalloc(&cuda_output_grid, total_size * sizeof(double));
+    float *device_input_grid, *device_output_grid;
+    cudaMalloc(&device_input_grid, grid_memory_size);
+    cudaMalloc(&device_output_grid, grid_memory_size);
 
-    // Copiar a matriz de entrada para o dispositivo
-    cudaMemcpy(cuda_input_grid, input_grid, total_size * sizeof(double), cudaMemcpyHostToDevice);
+    cudaMemcpy(device_input_grid, host_input_grid, grid_memory_size, cudaMemcpyHostToDevice);
 
-    int cuda_grid_size = (size + BLOCK_SIZE - 1) / BLOCK_SIZE;
+    int number_of_blocks = (size + block_size - 1) / block_size;
 
-    // Configurar dimensões de bloco e grid
-    dim3 blockSize(BLOCK_SIZE, BLOCK_SIZE);
-    dim3 gridSize(cuda_grid_size, cuda_grid_size);
+    dim3 device_block_size(block_size, block_size);
+    dim3 device_grid_size(number_of_blocks, number_of_blocks);
 
     for (int i = 0; i < iterations; i++)
         if (i % 2 == 0)
-            run_diff_equation_on_grid<<<gridSize, blockSize>>>(cuda_input_grid, cuda_output_grid, size);
+            run_diff_equation_on_grid<<<device_grid_size, device_block_size, shared_memory_size>>>(device_input_grid, device_output_grid, size, block_size);
         else
-            run_diff_equation_on_grid<<<gridSize, blockSize>>>(cuda_output_grid, cuda_input_grid, size);
+            run_diff_equation_on_grid<<<device_grid_size, device_block_size, shared_memory_size>>>(device_output_grid, device_input_grid, size, block_size);
 
-    // Copiar o resultado de volta para o host
-    cudaMemcpy(output_grid, cuda_input_grid, total_size * sizeof(double), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_output_grid, device_input_grid, grid_memory_size, cudaMemcpyDeviceToHost);
 
-    printf("%lf", output_grid[total_size % 2 == 0 ? (total_size / 2) - (size / 2) : total_size / 2]);
+    printf("%f", host_output_grid[total_size % 2 == 0 ? (total_size / 2) - (size / 2) : total_size / 2]);
 
-    // Liberar memória
-    free(input_grid);
-    free(output_grid);
-    cudaFree(cuda_input_grid);
-    cudaFree(cuda_output_grid);
+    free(host_input_grid);
+    free(host_output_grid);
+    cudaFree(device_input_grid);
+    cudaFree(device_output_grid);
 
     return 0;
 }
