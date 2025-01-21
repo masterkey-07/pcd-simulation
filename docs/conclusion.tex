@@ -1,0 +1,5 @@
+\section{Conclusão}
+
+Nesse primeiro momento foi feito apenas uma tradução do código sequencial para uma implementação em OpenMP com pouco foco para otimização do algoritmo, visando avaliar exclusivamente o impacto de usa-lo para paralelização. Nesse sentido temos uma melhora, mas abaixo do ideal teórico esperado.
+
+Para CUDA, se manteve o cuidado de traduzir do código sequencial, então pode-se inferir uma equivalência entre as implementações. Ao comparar ambas, observa-se que a implementação "simples" de CUDA atinge um desempenho muito melhor. Além disso a escabilidade em CUDA se comportou da forma esperada com ganho significativos para aumentos no tamanho da \textit{grid}.

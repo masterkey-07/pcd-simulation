@@ -1,0 +1,40 @@
+\section{Introdução}
+
+\subsection{Motivação} \label{sec:firstpage}
+
+A difusão de contaminantes em corpos d'água, como lagos, rios e oceanos, é um tema de grande relevância ambiental e social, dada a crescente preocupação com a qualidade da água e o impacto de atividades humanas no meio ambiente. A contaminação por substâncias químicas, resíduos industriais, efluentes domésticos e outros poluentes pode comprometer ecossistemas aquáticos e a saúde pública. Assim, entender e prever a propagação desses contaminantes é fundamental para a formulação de políticas de controle e mitigação.
+
+Uma abordagem eficaz para estudar a difusão de contaminantes é através de simulações computacionais. As simulações permitem a análise de diferentes cenários e variáveis, oferecendo uma visão detalhada sobre o comportamento dos poluentes ao longo do tempo e em diferentes condições ambientais. Essas ferramentas proporcionam aos pesquisadores a capacidade de modelar e prever eventos de contaminação, auxiliando na tomada de decisões mais informadas e eficazes.
+
+No entanto, a simulação de processos de difusão em grande escala pode ser computacionalmente intensiva, especialmente quando se considera a necessidade de alta precisão e a complexidade dos modelos envolvidos. Para superar esses desafios, a otimização do código e a utilização de técnicas de paralelismo se tornam essenciais. Tecnologias como OpenMP (Open Multi-Processing), CUDA (Compute Unified Device Architecture) e MPI (Message Passing Interface) oferecem soluções poderosas para acelerar os cálculos, permitindo o processamento simultâneo de múltiplas operações e a distribuição de tarefas entre diferentes unidades de processamento.
+
+Este estudo se concentra na implementação e comparação dessas técnicas de otimização em simulações de difusão de contaminantes, avaliando seu impacto no desempenho e na precisão dos modelos. Através da utilização de OpenMP, CUDA e MPI, será buscado a redução do tempo de execução de um algoritmo existente de simulação do processo de difusão em corpos d'água.
+
+\subsection{Modelo de Difusão Utilizado} \label{sec:firstpage}
+
+\[\frac{\partial C}{\partial t}\ = D \cdot (\nabla)^{2} C \]
+
+Onde:
+\begin{itemize}
+    \item \( C \) é a concentração do contaminante,
+    \item \( t \) é o tempo,
+    \item \( D \) é o coeficiente de difusão, e
+    \item \( (\nabla)^{2} C \) representa a taxa de variação de concentração no espaço.
+\end{itemize}
+
+Este modelo descreve a difusão de um contaminante em um meio homogêneo e isotrópico. A equação baseia-se na Segunda Lei de Fick, que afirma que a taxa de variação temporal da concentração em um ponto é proporcional à divergência do fluxo de difusão nesse ponto.
+
+Para resolver esta equação, utiliza-se o método de diferenças finitas, discretizando o espaço e o tempo. A discretização leva à equação de diferença:
+
+\[
+    \frac{C^{n+1}_{i,j} - C^{n}_{i,j}}{\Delta t} = D \cdot \left( \frac{C^{n}_{i+1,j} + C^{n}_{i-1,j} + C^{n}_{i,j+1} + C^{n}_{i,j-1} - 4C^{n}_{i,j}}{\Delta x^2} \right)
+\]
+
+Onde:
+\begin{itemize}
+    \item \( C^{n}_{i,j} \) é a concentração no ponto \( (i,j) \) no tempo \( n \),
+    \item \( \Delta t \) é o passo temporal, e
+    \item \( \Delta x \) é o tamanho da célula no espaço discreto.
+\end{itemize}
+
+Este esquema permite calcular a evolução temporal da concentração em uma grade 2D, sendo adequado para implementação em sistemas paralelos, como o modelo estudado neste trabalho.

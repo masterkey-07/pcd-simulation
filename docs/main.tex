@@ -1,154 +1,45 @@
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% How to use writeLaTeX: 
-%
-% You edit the source code here on the left, and the preview on the
-% right shows you the result within a few seconds.
-%
-% Bookmark this page and share the URL with your co-authors. They can
-% edit at the same time!
-%
-% You can upload figures, bibliographies, custom classes and
-% styles using the files menu.
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 \documentclass[12pt]{article}
 
 \usepackage{sbc-template}
+\usepackage{import}
 \usepackage{amssymb}
-\usepackage{graphicx,url}
-
-%\usepackage[brazil]{babel}   
+\usepackage{graphicx,url,float}
+\usepackage[portuguese]{babel}
 \usepackage[utf8]{inputenc}  
-
      
-\sloppy
+% \sloppy
 
-\title{Simulação e Análise de Modelos de Difusão de Contaminantes em Água
- - Programação Concorente e Distribuida}
+\title{Otimização na Simulação e Análise de Modelos de Difusão de Contaminantes em Água}
 
 \author{Pedro Paulo F. M. Vianna, Victor Jorge C. Chaves, João Guilherme Iwo D. L. Costa }
-
 
 \address{Instituto Ciência e Tecnologia (ICT) -- Universidade Federal de São Paulo
   (UNIFESP) \\ Campus São José dos Campos}
 
-\begin{document} 
+\begin{document}
 
 \maketitle
 
 \begin{abstract}
-    This work aims to create a simulation that models the diffusion of contaminants in a body of water (such as a lake or river), applying concepts of parallelism to speed up the calculation and observe the behavior of pollutants over time. The project will investigate the impact of OpenMP, CUDA and MPI on model runtime and accuracy. In this document we will address the implementation in OpenMP, parallelizing the code provided in the project proposal.
+  This work aims to create a simulation that models the diffusion of contaminants in a body of water (such as a lake or river), applying concepts of parallelism to speed up the calculation and observe the behavior of pollutants over time. The project will investigate the impact of OpenMP, CUDA and MPI on model runtime and accuracy. In this document we will address the implementation in OpenMP, parallelizing the code provided in the project proposal.
 \end{abstract}
-     
-\begin{resumo} 
-  Este trabalho tem como objetivo criar uma simulação que modele a difusão de contaminantes em um corpo d'água (como um lago ou rio), aplicando conceitos de paralelismo para acelerar o cálculo e observar o comportamento de poluentes ao longo do tempo. O projeto investigará o impacto de OpenMP, CUDA e MPI no tempo de execução e na precisão do modelo. Neste documento abordaremos a implementação em OpenMP, pararelizando o código fornecido na proposta de projeto.
+
+\begin{resumo}
+  Este trabalho tem como objetivo criar uma simulação que modele a difusão de contaminantes em um corpo d'água (como um lago ou rio), aplicando conceitos de paralelismo para acelerar o cálculo e observar o comportamento de poluentes ao longo do tempo. O projeto investigará o impacto de OpenMP, CUDA e MPI no tempo de execução e na precisão do modelo.
 \end{resumo}
 
+\import{.}{introduction.tex}
 
-\section{Introdução}
+\import{.}{objective.tex}
 
-Inicialmente existe uma implementação sequencial simples, que calcula a difusão em uma grade de 2000x2000 ao longo de 500 ciclos. Os testes serão feitos em um código alterado da versão sequencial para uma pararelizada, portanto os primeiros testes serão feitos com os mesmos parâmetros que o código sequencial. O intíuto do trabalho é discutir, não apenas a melhora do cálculo em si, mas se tal tarefa é justificável, ou seja, entender se todo trabalho para pararelizar e otimizar o algorítmo deram resultados significativos.
+\import{.}{methodology.tex}
 
-Para comparar as implementações serão mostrados dados sobre o tempo de execução, assim como exemplos da corretude de cada código, mostrando, objetivamente, as vantagens de cada implementação e suas limitações tambem.
+\import{.}{development.tex}
 
-\section{Modelo de Difusão estudado} \label{sec:firstpage}
+\import{.}{discussion.tex}
 
-O projeto estudará o modelo abaixo:
+\import{.}{conclusion.tex}
 
-  \[\frac{\partial C}{\partial t}\ = D \cdot (\nabla)^{2} C \]
-
-Onde:
-    
-        C é a concentração do contaminante,
-        t é o tempo e 
-        D é o coeficiente de difusão
-        \[(\nabla)^{2} C\]
-    
-    Representa a taxa de variação de concentração no espaço.
-
-
-\section{CD-ROMs and Printed Proceedings}
-
-In some conferences, the papers are published on CD-ROM while only the
-abstract is published in the printed Proceedings. In this case, authors are
-invited to prepare two final versions of the paper. One, complete, to be
-published on the CD and the other, containing only the first page, with
-abstract and ``resumo'' (for papers in Portuguese).
-
-\section{Sections and Paragraphs}
-
-Section titles must be in boldface, 13pt, flush left. There should be an extra
-12 pt of space before each title. Section numbering is optional. The first
-paragraph of each section should not be indented, while the first lines of
-subsequent paragraphs should be indented by 1.27 cm.
-
-\subsection{Subsections}
-
-The subsection titles must be in boldface, 12pt, flush left.
-
-\section{Figures and Captions}\label{sec:figs}
-
-
-Figure and table captions should be centered if less than one line
-(Figure~\ref{fig:exampleFig1}), otherwise justified and indented by 0.8cm on
-both margins, as shown in Figure~\ref{fig:exampleFig2}. The caption font must
-be Helvetica, 10 point, boldface, with 6 points of space before and after each
-caption.
-
-\begin{figure}[ht]
-\centering
-\includegraphics[width=.5\textwidth]{fig1.jpg}
-\caption{A typical figure}
-\label{fig:exampleFig1}
-\end{figure}
-
-\begin{figure}[ht]
-\centering
-\includegraphics[width=.3\textwidth]{fig2.jpg}
-\caption{This figure is an example of a figure caption taking more than one
-  line and justified considering margins mentioned in Section~\ref{sec:figs}.}
-\label{fig:exampleFig2}
-\end{figure}
-
-In tables, try to avoid the use of colored or shaded backgrounds, and avoid
-thick, doubled, or unnecessary framing lines. When reporting empirical data,
-do not use more decimal digits than warranted by their precision and
-reproducibility. Table caption must be placed before the table (see Table 1)
-and the font used must also be Helvetica, 10 point, boldface, with 6 points of
-space before and after each caption.
-
-\begin{table}[ht]
-\centering
-\caption{Variables to be considered on the evaluation of interaction
-  techniques}
-\label{tab:exTable1}
-\includegraphics[width=.7\textwidth]{table.jpg}
-\end{table}
-
-\section{Images}
-
-All images and illustrations should be in black-and-white, or gray tones,
-excepting for the papers that will be electronically available (on CD-ROMs,
-internet, etc.). The image resolution on paper should be about 600 dpi for
-black-and-white images, and 150-300 dpi for grayscale images.  Do not include
-images with excessive resolution, as they may take hours to print, without any
-visible difference in the result. 
-
-\section{Conclusão}
-
-
-\section{References}
-
-Bibliographic references must be unambiguous and uniform.  We recommend giving
-the author names references in brackets, e.g. \cite{knuth:84},
-\cite{boulic:91}, and \cite{smith:99}.
-
-The references must be listed using 12 point font size, with 6 points of space
-before each reference. The first line of each reference should not be
-indented, while the subsequent should be indented by 0.5 cm.
-
-\bibliographystyle{sbc}
-\bibliography{sbc-template}
+\import{.}{reference.tex}
 
 \end{document}
