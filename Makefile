@@ -1,6 +1,7 @@
 # COMPILATION
 CC = gcc
 CFLAGS = -Wall -Wextra -g -fopenmp -I. -Iinclude -O3
+CFLAGS2 = -Wall -Wextra -g -fopenmp -I. -Iinclude
 
 # FOLDERS
 SRC_DIR = src
@@ -16,7 +17,7 @@ SAMPLE_TARGET = $(DIST_DIR)/$(SAMPLE)
 SEQUENCIAL_TARGET = $(DIST_DIR)/$(SEQUENCIAL)
 PARALLEL_OMP_TARGET = $(DIST_DIR)/$(PARALLEL_OMP)
 
-all: $(DIST_DIR) $(SAMPLE_TARGET) $(SEQUENCIAL_TARGET) $(PARALLEL_OMP_TARGET)
+all: $(DIST_DIR) $(SAMPLE_TARGET) $(SEQUENCIAL_TARGET) $(SEQUENCIAL_TARGET)_raw $(PARALLEL_OMP_TARGET)
 
 $(DIST_DIR):
 	@mkdir -p $(DIST_DIR)
@@ -31,6 +32,11 @@ $(SEQUENCIAL_TARGET): $(SRC_DIR)/$(SEQUENCIAL).c | $(DIST_DIR)
 	@echo "Compiling $(SRC_DIR)/$(SEQUENCIAL).c into $(SEQUENCIAL_TARGET)..."
 	@$(CC) $(CFLAGS) $< -o $@
 	@echo "Build complete: $(SEQUENCIAL_TARGET)"
+
+$(SEQUENCIAL_TARGET)_raw: $(SRC_DIR)/$(SEQUENCIAL).c | $(DIST_DIR)
+	@echo "Compiling $(SRC_DIR)/$(SEQUENCIAL).c into $(SEQUENCIAL_TARGET)_raw..."
+	@$(CC) $(CFLAGS2) $< -o $@
+	@echo "Build complete: $(SEQUENCIAL_TARGET)_raw"
 
 $(PARALLEL_OMP_TARGET): $(SRC_DIR)/$(PARALLEL_OMP).c | $(DIST_DIR)
 	@echo "Compiling $(SRC_DIR)/$(PARALLEL_OMP).c into $(PARALLEL_OMP_TARGET)..."
