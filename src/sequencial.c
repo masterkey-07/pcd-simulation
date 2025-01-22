@@ -3,14 +3,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define START_ITERATIONS 200
+#define START_ITERATIONS 1000
+// #define START_ITERATIONS 200
 #define MAX_ITERATIONS 1000
 #define ITERATIONS_STEP 200
 
 #define MAX_TRIES 3
 
-#define START_GRID_SIZE 400
-#define MAX_GRID_SIZE 2000
+#define START_GRID_SIZE 4000
+// #define START_GRID_SIZE 400
+#define MAX_GRID_SIZE 4000
 #define GRID_SIZE_STEP 400
 
 #define DELTA_T 0.01
@@ -54,20 +56,17 @@ void free_grid(double **grid, int size)
 
 void run_diffusion_equation_on_grid(double **start_grid, double **next_grid, int grid_size, int iterations)
 {
+    double **helper;
+
     for (int t = 0; t < iterations; t++)
     {
         for (int i = 1; i < grid_size - 1; i++)
             for (int j = 1; j < grid_size - 1; j++)
                 next_grid[i][j] = diffusion_equation(start_grid, i, j);
 
-        double average_diffusion = 0.;
-
-        for (int i = 1; i < grid_size - 1; i++)
-            for (int j = 1; j < grid_size - 1; j++)
-            {
-                average_diffusion += fabs(next_grid[i][j] - start_grid[i][j]);
-                start_grid[i][j] = next_grid[i][j];
-            }
+        helper = start_grid;
+        start_grid = next_grid;
+        next_grid = helper;
     }
 }
 

@@ -4,28 +4,26 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define START_THREADS 4
+#define START_THREADS 12
+// #define START_THREADS 4
 #define MAX_THREADS 12
 #define THREADS_STEP 4
 
-#define START_ITERATIONS 200
+#define START_ITERATIONS 1000
+// #define START_ITERATIONS 200
 #define MAX_ITERATIONS 1000
 #define ITERATIONS_STEP 200
 
 #define MAX_TRIES 3
 
-#define START_GRID_SIZE 400
-#define MAX_GRID_SIZE 2000
+#define START_GRID_SIZE 4000
+// #define START_GRID_SIZE 400
+#define MAX_GRID_SIZE 4000
 #define GRID_SIZE_STEP 400
 
 #define DELTA_T 0.01
 #define DELTA_X 1.0
 #define DIFFUSION_COEFFICIENT 0.1
-
-double diffusion_equation(double **grid, int row, int column)
-{
-    return grid[row][column] + DIFFUSION_COEFFICIENT * DELTA_T * ((grid[row + 1][column] + grid[row - 1][column] + grid[row][column + 1] + grid[row][column - 1] - 4 * grid[row][column]) / (DELTA_X * DELTA_X));
-}
 
 double **create_grid(int size)
 {
@@ -61,23 +59,19 @@ void free_grid(double **grid, int size)
 
 void run_diffusion_equation_on_grid(double **start_grid, double **next_grid, int grid_size, int iterations)
 {
+    double **helper;
+
     for (int iteration = 0; iteration < iterations; iteration++)
     {
 
 #pragma omp parallel for
         for (int row = 1; row < grid_size - 1; row++)
             for (int column = 1; column < grid_size - 1; column++)
-                next_grid[row][column] = diffusion_equation(start_grid, row, column);
+                next_grid[row][column] = start_grid[row][column] + DIFFUSION_COEFFICIENT * DELTA_T * ((start_grid[row + 1][column] + start_grid[row - 1][column] + start_grid[row][column + 1] + start_grid[row][column - 1] - 4 * start_grid[row][column]) / (DELTA_X * DELTA_X));
 
-        double average_diffusion = 0.;
-
-#pragma omp parallel for reduction(+ : average_diffusion)
-        for (int i = 1; i < grid_size - 1; i++)
-            for (int j = 1; j < grid_size - 1; j++)
-            {
-                average_diffusion += fabs(next_grid[i][j] - start_grid[i][j]);
-                start_grid[i][j] = next_grid[i][j];
-            }
+        helper = start_grid;
+        start_grid = next_grid;
+        next_grid = helper;
     }
 }
 
