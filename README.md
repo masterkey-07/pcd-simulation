@@ -68,3 +68,25 @@ Comando para executar o exemplo:
 ```bash
 make sample
 ```
+
+# Pseudo Código do MPI
+
+```
+MAX = 12
+LGRID = 1000
+
+Algoritmo(N) {
+    submatrix [(LGRID / MAX) + 2][LGRID]
+
+    for iteration in iterations {
+        for i in LGRID / MAX
+            for j in LGRID
+                submatrix[i][j] = equation(submatrix, i, j)
+
+        send_border(N, submatrix[top_border], submatrix[bottom_border]);
+        receive_border(N, submatrix[top_border], submatrix[bottom_border]);
+
+    update_submatrix();
+    }
+}
+```
