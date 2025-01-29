@@ -69,6 +69,28 @@ Comando para executar o exemplo:
 make sample
 ```
 
+# Brainstorming
+
+- Sequencial:
+
+  - Gráfico de Speedup
+  - Gráfico de Linha do Tempo: Iterações (X)
+  - Gráfico de Linha do Tempo: Gridsize (X)
+
+- OMP & MPI:
+
+  - Gráfico de Speedup
+  - Gráfico de Performance
+
+- CUDA:
+
+  - Gráfico de Speedup
+  - Boxplot para cada Blocksize
+
+- Conclusão
+  - Gráfico de Execuçao
+  - Gráfico de Speedup: Raw x O3 x OMP x MPI
+
 # Pseudo Código do MPI
 
 ```
@@ -79,14 +101,23 @@ Algoritmo(N) {
     submatrix [(LGRID / MAX) + 2][LGRID]
 
     for iteration in iterations {
-        for i in LGRID / MAX
-            for j in LGRID
-                submatrix[i][j] = equation(submatrix, i, j)
+
+        for j in LGRID {
+            submatrix[top_border + 1][j] = equation(submatrix, top_border + 1, j)
+            submatrix[bottom_border - 1][j] = equation(submatrix, bottom_border - 1, j)
+        }
 
         send_border(N, submatrix[top_border], submatrix[bottom_border]);
+
+        for i in LGRID / MAX {
+            for j in LGRID {
+                submatrix[i][j] = equation(submatrix, i, j)
+            }
+        }
+
         receive_border(N, submatrix[top_border], submatrix[bottom_border]);
 
-    update_submatrix();
+        update_submatrix();
     }
 }
 ```
