@@ -2,19 +2,19 @@
 #include <stdlib.h>
 #include <cuda_runtime.h>
 
+#define START_ITERATIONS 500
+#define MAX_ITERATIONS 1500
+#define ITERATIONS_STEP 500
+
+#define START_GRID_SIZE 2000
+#define MAX_GRID_SIZE 6000
+#define GRID_SIZE_STEP 2000
+
 #define START_BLOCK_SIZE 4
 #define MAX_BLOCK_SIZE 32
 #define BLOCK_SIZE_STEP 2
 
-#define START_ITERATIONS 200
-#define MAX_ITERATIONS 2000
-#define ITERATIONS_STEP 200
-
 #define MAX_TRIES 3
-
-#define START_GRID_SIZE 400
-#define MAX_GRID_SIZE 4000
-#define GRID_SIZE_STEP 400
 
 #define DELTA_T 0.01
 #define DELTA_X 1.0

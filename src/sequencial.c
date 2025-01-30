@@ -3,17 +3,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define START_ITERATIONS 1000
-// #define START_ITERATIONS 200
-#define MAX_ITERATIONS 1000
-#define ITERATIONS_STEP 200
+#define START_ITERATIONS 500
+#define MAX_ITERATIONS 1500
+#define ITERATIONS_STEP 500
 
 #define MAX_TRIES 3
 
-#define START_GRID_SIZE 4000
-// #define START_GRID_SIZE 400
-#define MAX_GRID_SIZE 4000
-#define GRID_SIZE_STEP 400
+#define START_GRID_SIZE 2000
+#define MAX_GRID_SIZE 6000
+#define GRID_SIZE_STEP 2000
 
 #define DELTA_T 0.01
 #define DELTA_X 1.0
