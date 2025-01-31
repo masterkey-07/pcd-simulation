@@ -44,7 +44,7 @@ $(SEQUENCIAL_TARGET)_raw: $(SRC_DIR)/$(SEQUENCIAL).c | $(DIST_DIR)
 
 $(PARALLEL_OMP_TARGET): $(SRC_DIR)/$(PARALLEL_OMP).c | $(DIST_DIR)
 	@echo "Compiling $(SRC_DIR)/$(PARALLEL_OMP).c into $(PARALLEL_OMP_TARGET)..."
-	@$(CC) $(CFLAGS) $< -o $@
+	@$(CC) $(CFLAGS2) $< -o $@
 	@echo "Build complete: $(PARALLEL_OMP_TARGET)"
 
 $(PARALLEL_MPI_TARGET): $(SRC_DIR)/$(PARALLEL_MPI).c | $(DIST_DIR)
