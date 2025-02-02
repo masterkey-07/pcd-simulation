@@ -3,21 +3,17 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-// Simulation parameters.
-#define ITERATIONS 100
+// Simulation constants (diffusion parameters)
+const float D       = 0.1f;    // Diffusion constant.
+const float DELTA_T = 0.01f;   // Time step.
+const float DELTA_X = 1.0f;    // Spatial resolution.
 
-// Global simulation constants.
-const int GLOBAL_N = 101;   // Global matrix size (square matrix). Use an odd number so there is a unique center.
-const float D = 0.1f;       // Diffusion constant.
-const float DELTA_T = 0.01f;// Time step.
-const float DELTA_X = 1.0f; // Spatial resolution.
-
-// Macro to index into a 1D array that represents a 2D array.
+// Macro to index into a 1D array representing a 2D array.
 #define IDX(i, j, ncols) ((i) * (ncols) + (j))
 
-// A helper to decide if a given global index is a boundary cell.
-bool is_global_boundary(int i, int j) {
-    return (i == 0 || i == GLOBAL_N - 1 || j == 0 || j == GLOBAL_N - 1);
+// Helper function to check whether a given global (i,j) is a boundary cell.
+bool is_global_boundary(int i, int j, int global_n) {
+    return (i == 0 || i == global_n - 1 || j == 0 || j == global_n - 1);
 }
 
 int main(int argc, char *argv[]) {
@@ -27,117 +23,159 @@ int main(int argc, char *argv[]) {
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-    // --- Partition the rows among processes ---
-    // We use a block decomposition that may result in uneven partitions.
-    int base_rows = GLOBAL_N / size;
-    int remainder = GLOBAL_N % size;
-    int local_rows = base_rows + (rank < remainder ? 1 : 0);
-
-    // Determine the global starting row for this process.
-    int row_start = rank * base_rows + (rank < remainder ? rank : remainder);
-    // Now, row_start is the index of the first global row for this process.
-
-    // --- Allocate arrays ---
-    // We allocate (local_rows+2) rows to include two ghost rows (top and bottom).
-    int total_rows = local_rows + 2;
-    float *current = (float *)malloc(total_rows * GLOBAL_N * sizeof(float));
-    float *next    = (float *)malloc(total_rows * GLOBAL_N * sizeof(float));
-    if (!current || !next) {
-        fprintf(stderr, "Process %d: Memory allocation failed\n", rank);
-        MPI_Abort(MPI_COMM_WORLD, 1);
-    }
-
-    // --- Initialize the local matrix ---
-    // Set all interior cells to 0.
-    for (int i = 1; i <= local_rows; i++) {
-        for (int j = 0; j < GLOBAL_N; j++) {
-            current[IDX(i, j, GLOBAL_N)] = 0.0f;
-        }
-    }
-    // Initialize ghost rows (top and bottom) to 0.
-    for (int j = 0; j < GLOBAL_N; j++) {
-        current[IDX(0, j, GLOBAL_N)] = 0.0f;             // Top ghost row.
-        current[IDX(local_rows + 1, j, GLOBAL_N)] = 0.0f;  // Bottom ghost row.
-    }
-    // Set the center cell to 1 if it is contained in this process.
-    int center = GLOBAL_N / 2; // Global center index (both row and column).
-    if (center >= row_start && center < row_start + local_rows) {
-        // The corresponding local row index (within the interior part) is:
-        int local_center = center - row_start + 1;  // +1 accounts for the ghost row at index 0.
-        current[IDX(local_center, center, GLOBAL_N)] = 1.0f;
-    }
-
-    // Copy current into next (initial condition).
-    for (int i = 0; i < total_rows; i++) {
-        for (int j = 0; j < GLOBAL_N; j++) {
-            next[IDX(i, j, GLOBAL_N)] = current[IDX(i, j, GLOBAL_N)];
-        }
-    }
-
-    // --- Main iterative loop ---
-    for (int iter = 0; iter < ITERATIONS; iter++) {
-        MPI_Request reqs[4];
-        int req_count = 0;
-
-        // --- Exchange halo rows with neighbors ---
-        // Upward exchange: if there is a process above, send row 1 and receive into ghost row 0.
-        if (rank > 0) {
-            MPI_Isend(&current[IDX(1, 0, GLOBAL_N)], GLOBAL_N, MPI_FLOAT, rank - 1, 0, MPI_COMM_WORLD, &reqs[req_count++]);
-            MPI_Irecv(&current[IDX(0, 0, GLOBAL_N)], GLOBAL_N, MPI_FLOAT, rank - 1, 1, MPI_COMM_WORLD, &reqs[req_count++]);
-        }
-        // Downward exchange: if there is a process below, send last real row (row local_rows) and receive into ghost row local_rows+1.
-        if (rank < size - 1) {
-            MPI_Isend(&current[IDX(local_rows, 0, GLOBAL_N)], GLOBAL_N, MPI_FLOAT, rank + 1, 1, MPI_COMM_WORLD, &reqs[req_count++]);
-            MPI_Irecv(&current[IDX(local_rows + 1, 0, GLOBAL_N)], GLOBAL_N, MPI_FLOAT, rank + 1, 0, MPI_COMM_WORLD, &reqs[req_count++]);
-        }
-        if (req_count > 0)
-            MPI_Waitall(req_count, reqs, MPI_STATUSES_IGNORE);
-
-        // --- Update each interior cell ---
-        // Loop over the real rows in the local block (indices 1 to local_rows).
-        for (int i = 1; i <= local_rows; i++) {
-            int global_i = row_start + (i - 1);  // Convert local interior row to global row index.
-            for (int j = 0; j < GLOBAL_N; j++) {
-                // For global boundary cells, we leave the value unchanged.
-                if (is_global_boundary(global_i, j)) {
-                    next[IDX(i, j, GLOBAL_N)] = current[IDX(i, j, GLOBAL_N)];
-                } else {
-                    // Compute the laplacian (using the four cardinal neighbors).
-                    float laplacian = (current[IDX(i + 1, j, GLOBAL_N)] +
-                                       current[IDX(i - 1, j, GLOBAL_N)] +
-                                       current[IDX(i, j + 1, GLOBAL_N)] +
-                                       current[IDX(i, j - 1, GLOBAL_N)] -
-                                       4.0f * current[IDX(i, j, GLOBAL_N)]) / (DELTA_X * DELTA_X);
-                    // Update the cell using the given formula.
-                    next[IDX(i, j, GLOBAL_N)] = current[IDX(i, j, GLOBAL_N)] + D * DELTA_T * laplacian;
-                }
-            }
-        }
-
-        // Swap the buffers for the next iteration.
-        float *tmp = current;
-        current = next;
-        next = tmp;
-    }
-
-    // --- Compute the global mean of all cells ---
-    double local_sum = 0.0;
-    for (int i = 1; i <= local_rows; i++) {
-        for (int j = 0; j < GLOBAL_N; j++) {
-            local_sum += current[IDX(i, j, GLOBAL_N)];
-        }
-    }
-    double global_sum = 0.0;
-    MPI_Reduce(&local_sum, &global_sum, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-
-    // Process 0 computes and prints the final mean.
+    // Only rank 0 prints a header.
     if (rank == 0) {
-        double mean = global_sum / (GLOBAL_N * GLOBAL_N);
-        printf("Final mean value after %d iterations: %f\n", ITERATIONS, mean);
+        printf("try, matrix_size, iterations, setup_time, runtime_time, teardown_time, mean_value\n");
     }
 
-    free(current);
-    free(next);
+    /* 
+     * Loop over the different matrix sizes and iteration counts.
+     * Matrix sizes: 2000, 4000, 6000 (square matrix: global_n x global_n)
+     * Iteration counts: 500, 1000, 1500
+     * Each combination is run 3 times.
+     */
+    for (int global_n = 2000; global_n <= 6000; global_n += 2000) {
+        for (int iterations = 500; iterations <= 1500; iterations += 500) {
+            for (int trial = 1; trial <= 3; trial++) {
+
+                double t_setup_start, t_setup_end;
+                double t_runtime_start, t_runtime_end;
+                double t_teardown_start, t_teardown_end;
+
+                /* ===== Setup Phase ===== */
+                t_setup_start = MPI_Wtime();
+
+                // Partition the rows among processes.
+                // We allow an uneven distribution.
+                int base_rows = global_n / size;
+                int remainder = global_n % size;
+                int local_rows = base_rows + (rank < remainder ? 1 : 0);
+
+                // Determine the global row index of the first row for this process.
+                int row_start = rank * base_rows + (rank < remainder ? rank : remainder);
+
+                // Allocate arrays for the local block plus two ghost rows.
+                int total_rows = local_rows + 2;  // ghost top and bottom rows
+                float *current = (float *)malloc(total_rows * global_n * sizeof(float));
+                float *next    = (float *)malloc(total_rows * global_n * sizeof(float));
+                if (!current || !next) {
+                    fprintf(stderr, "Process %d: Memory allocation failed\n", rank);
+                    MPI_Abort(MPI_COMM_WORLD, 1);
+                }
+
+                // Initialize the interior (real) rows to 0.
+                for (int i = 1; i <= local_rows; i++) {
+                    for (int j = 0; j < global_n; j++) {
+                        current[IDX(i, j, global_n)] = 0.0f;
+                    }
+                }
+                // Initialize ghost rows to 0.
+                for (int j = 0; j < global_n; j++) {
+                    current[IDX(0, j, global_n)] = 0.0f;
+                    current[IDX(local_rows + 1, j, global_n)] = 0.0f;
+                }
+
+                // Set the center cell of the global matrix to 1.
+                int center = global_n / 2;
+                // If this process owns the center row, update its corresponding cell.
+                if (center >= row_start && center < row_start + local_rows) {
+                    // Local row index: shift by +1 because row 0 is the top ghost.
+                    int local_center = center - row_start + 1;
+                    current[IDX(local_center, center, global_n)] = 1.0f;
+                }
+
+                // Copy current into next for the initial condition.
+                for (int i = 0; i < total_rows; i++) {
+                    for (int j = 0; j < global_n; j++) {
+                        next[IDX(i, j, global_n)] = current[IDX(i, j, global_n)];
+                    }
+                }
+                t_setup_end = MPI_Wtime();
+
+                /* ===== Runtime Phase (Iterations) ===== */
+                t_runtime_start = MPI_Wtime();
+
+                for (int iter = 0; iter < iterations; iter++) {
+                    MPI_Request reqs[4];
+                    int req_count = 0;
+
+                    // Exchange halo rows with neighbors.
+                    // Upward exchange: if a process above exists.
+                    if (rank > 0) {
+                        MPI_Isend(&current[IDX(1, 0, global_n)], global_n, MPI_FLOAT,
+                                  rank - 1, 0, MPI_COMM_WORLD, &reqs[req_count++]);
+                        MPI_Irecv(&current[IDX(0, 0, global_n)], global_n, MPI_FLOAT,
+                                  rank - 1, 1, MPI_COMM_WORLD, &reqs[req_count++]);
+                    }
+                    // Downward exchange: if a process below exists.
+                    if (rank < size - 1) {
+                        MPI_Isend(&current[IDX(local_rows, 0, global_n)], global_n, MPI_FLOAT,
+                                  rank + 1, 1, MPI_COMM_WORLD, &reqs[req_count++]);
+                        MPI_Irecv(&current[IDX(local_rows + 1, 0, global_n)], global_n, MPI_FLOAT,
+                                  rank + 1, 0, MPI_COMM_WORLD, &reqs[req_count++]);
+                    }
+                    if (req_count > 0)
+                        MPI_Waitall(req_count, reqs, MPI_STATUSES_IGNORE);
+
+                    // Update the interior cells (local rows 1 to local_rows).
+                    for (int i = 1; i <= local_rows; i++) {
+                        int global_i = row_start + (i - 1);
+                        for (int j = 0; j < global_n; j++) {
+                            // Keep boundary cells fixed.
+                            if (is_global_boundary(global_i, j, global_n)) {
+                                next[IDX(i, j, global_n)] = current[IDX(i, j, global_n)];
+                            } else {
+                                float laplacian = ( current[IDX(i+1, j, global_n)]
+                                                  + current[IDX(i-1, j, global_n)]
+                                                  + current[IDX(i, j+1, global_n)]
+                                                  + current[IDX(i, j-1, global_n)]
+                                                  - 4.0f * current[IDX(i, j, global_n)] )
+                                                  / (DELTA_X * DELTA_X);
+                                next[IDX(i, j, global_n)] = current[IDX(i, j, global_n)]
+                                                            + D * DELTA_T * laplacian;
+                            }
+                        }
+                    }
+
+                    // Swap the pointers for the next iteration.
+                    float *tmp = current;
+                    current = next;
+                    next = tmp;
+                }
+                t_runtime_end = MPI_Wtime();
+
+                /* ===== Teardown Phase ===== */
+                t_teardown_start = MPI_Wtime();
+                // Compute the local sum of the interior (real) cells.
+                double local_sum = 0.0;
+                for (int i = 1; i <= local_rows; i++) {
+                    for (int j = 0; j < global_n; j++) {
+                        local_sum += current[IDX(i, j, global_n)];
+                    }
+                }
+                double global_sum = 0.0;
+                MPI_Reduce(&local_sum, &global_sum, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+
+                // Compute the final mean value.
+                double mean = global_sum / (global_n * (double)global_n);
+                t_teardown_end = MPI_Wtime();
+
+                // Free allocated memory.
+                free(current);
+                free(next);
+
+                /* ===== Print Measurements ===== */
+                double setup_time    = t_setup_end    - t_setup_start;
+                double runtime_time  = t_runtime_end  - t_runtime_start;
+                double teardown_time = t_teardown_end - t_teardown_start;
+                if (rank == 0) {
+                    printf("%d, %d, %d, %lf, %lf, %lf, %lf\n", trial, global_n, iterations,
+                           setup_time, runtime_time, teardown_time, mean);
+                }
+            } // end trial loop
+        } // end iterations loop
+    } // end matrix size loop
+
     MPI_Finalize();
     return 0;
 }
