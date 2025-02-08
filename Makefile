@@ -49,7 +49,7 @@ $(PARALLEL_OMP_TARGET): $(SRC_DIR)/$(PARALLEL_OMP).c | $(DIST_DIR)
 
 $(PARALLEL_MPI_TARGET): $(SRC_DIR)/$(PARALLEL_MPI).c | $(DIST_DIR)
 	@echo "Compiling $(SRC_DIR)/$(PARALLEL_MPI).c into $(PARALLEL_MPI_TARGET)..."
-	@$(MPICC) $< -o $@ -ldl -lm
+	@$(MPICC) $< -o $@ -ldl -lm -O3
 	@echo "Build complete: $(PARALLEL_MPI_TARGET)"
 
 sequencial: $(SEQUENCIAL_TARGET)

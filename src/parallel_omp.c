@@ -4,9 +4,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define START_THREADS 4
+#define START_THREADS 2
 #define MAX_THREADS 12
-#define THREADS_STEP 4
+#define THREADS_STEP 2
 
 #define START_ITERATIONS 500
 #define MAX_ITERATIONS 1500
