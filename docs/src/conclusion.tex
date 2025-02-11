@@ -1,0 +1,5 @@
+\section{Conclusão}
+
+Os resultados indicam que a utilização de GPUs com CUDA se mostra particularmente eficiente para problemas do tipo stencil 2D, alcançando uma execução 275 vezes mais rápido que o algoritmo original. O processamento de células pode ser altamente paralelizado devido à sua natureza estruturada e ao alto grau de reutilização de dados vizinhos. Essa característica permite um melhor aproveitamento da hierarquia de memória da GPU, reduzindo a latência e aumentando a largura de banda efetiva. Trabalhos futuros podem explorar diferentes estratégias de acesso à memória global e compartilhada para melhorar ainda mais a eficiência da computação stencil em arquiteturas CUDA.
+
+Outra alternativa utilizando apenas de CPU é a execução em processos via OpenMPI aproveitando de uma otimização de compilação, com esse conjunto de técnicas é possível reduzir ainda mais o tempo de execução, alcançando um SpeedUp de 15, mas comparando com a execução de GPU, é 18 vezes mais lenta.
