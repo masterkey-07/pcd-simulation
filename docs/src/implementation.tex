@@ -1,0 +1,112 @@
+\section{Implementação e Teste}
+
+\subsection{Descrição da Implementação}
+
+Com base no problema, será implementado versões otimizadas e/ou paralelizadas do problema proposto, os casos que serão implementados e testados são o que está listado abaixo:
+
+\begin{itemize}
+    \item Otimização do código sequencial com o compilador GCC usando a \textit{flag} de otimização O3.
+    \item Paralelização com de Threads usando a biblioteca OpenMP.
+    \item Paralelização com Processos usando a biblioteca OpenMPI e otimização de compilação.
+    \item Paralelização com GPU usando CUDA.
+\end{itemize}
+
+\subsection{Descrição dos Ambientes de Execução}
+
+Cada implementação (exceto o de CUDA) foi executada no seguinte ambiente de execução descrito na tabela abaixo:
+
+\begin{table}[H]
+    \centering
+    \caption{Descrição do Ambiente de Execução}
+    \label{tab:exemplo}
+    \begin{tabular}{lcc}
+        \toprule
+        Nome          & Notebook IdeaPad      \\
+        CPU           & Ryzen 5 5600g         \\
+        GPU Integrada & Radeon Vega 7 Graphic \\
+        Memória RAM   & 12 GB RAM             \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+No caso de CUDA, o ambiente de execução está descrito na tabela abaixo:
+
+\begin{table}[H]
+    \centering
+    \caption{Descrição do Ambiente de Execução}
+    \label{tab:exemplo}
+    \begin{tabular}{lcc}
+        \toprule
+        Nome          & Google Colab               \\
+        CPU           & CPU Intel Xeon com 2 vCPUs \\
+        GPU Integrada & T4                         \\
+        Memória RAM   & 16 GB RAM                  \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsection{Descrição dos casos de Teste}
+
+Foi escolhido um conjunto de combinações para simular diferentes cenários de complexidade computacional.
+Cada implementação (exceto o de CUDA) foi testado nas seguintes combinações de casos:
+
+\begin{table}[H]
+    \centering
+    \caption{Descrição do Ambiente de Execução}
+    \label{tab:exemplo}
+    \begin{tabular}{lcc}
+        \toprule
+        \textbf{Tamanho da Grid}                                 & 2000, 4000, 6000   \\
+        \textbf{Quantidade de Iterações}                         & 500, 1000, 500     \\
+        \textbf{Quantidade de Threads (Implementação OpenMP)}    & 2, 4, 6, 8, 10, 12 \\
+        \textbf{Quantidade de Processos (Implementação OpenMPI)} & 2, 4, 6, 8, 10, 12 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+No caso de CUDA, os casos de teste são os descritos na tabela abaixo:
+
+\begin{table}[H]
+    \centering
+    \caption{Descrição do Ambiente de Execução}
+    \label{tab:exemplo}
+    \begin{tabular}{lcc}
+        \toprule
+        \textbf{Tamanho da Grid}         & 400, 800, 1200, 1600, 2000, 2400                       \\
+        \textbf{Quantidade de Iterações} & 400, 600, 800, 200, 1000, 1200, 1400, 1600, 1800, 2000 \\
+        \textbf{Tamanho do Bloco}        & 4, 8, 16, 32                                           \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsection{Otimização com Compilador}
+
+Foi utilizado do compilador a flag \textit{-03}, da o qual ativa todas as otimização de código agressivas que o compilador GCC fornece.
+
+\subsection{Implementação com OpenOMP}
+
+Foi utilizado a diretiva \texttt{\#pragma omp parallel for} para paralelizar o laço principal, distribuindo a execução entre as threads:
+
+Foi testado o uso da diretiva \texttt{collapse(2)} para laços aninhados e \texttt{schedule(dynamic, 4)} para balancear carga, mas a proposta original mostrou melhor desempenho geral.
+
+Por fim, foi também analisado com diferentes quantidades de Threads para conferir a performance da solução.
+
+E vale comentar, que não foi utilizado a otimização de compilação pois elas são focadas para execução sequencial.
+
+\subsection{Implementação com OpenMPI}
+
+A implementação com OpenMPI utiliza decomposição de domínio, onde cada processo recebe um subconjunto de linhas da matriz.
+A comunicação entre processos ocorre via troca de fronteiras, garantindo continuidade nos cálculos.
+Cada processo executa as atualizações localmente e sincroniza os dados vizinhos.
+
+Além disso, foi utilizado também a otimização de compilação, para aproveitar a execução sequencial de cada processo.
+
+\subsection{Implementação com CUDA}
+
+O código utiliza CUDA para paralelizar a solução em uma grade.
+Foi realizado a distribuição de seções da grade entre múltiplas threads, organizadas em blocos.
+Cada bloco usa memória compartilhada para armazenar dados temporários, reduzindo a necessidade de acessos à memória global.
+
+
+Toda a execução descrita acima ocorre para cada iteração, então não há necessidade de sincronização em cada execução do kernel,
+exceto a sincronização na execução de todas as threads, como também o seu carregamento dos dados para a memória do computador.

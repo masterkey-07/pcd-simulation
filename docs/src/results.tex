@@ -1,8 +1,6 @@
-\pagebreak
-
 \section{Resultados e Discussão}
 
-Nesta seção, são apresentados os resultados obtidos para cada técnica de otimização aplicada, assim com os resultados do algoritmo sem otimização, será feito uma análise de speedup para cada técnica.
+Nesta seção, são apresentados os resultados obtidos para cada técnica de otimização e paralelização aplicada, assim, com os resultados do algoritmo sem otimização, será feito uma análise de speedup para cada técnica.
 
 Para cada técnica, foi conduzida uma série de simulações utilizando combinações variadas de tamanhos de matriz e quantidades de iterações, conforme descrito a seguir:
 
@@ -11,16 +9,6 @@ Para cada técnica, foi conduzida uma série de simulações utilizando combina�
     \item \textbf{Quantidade de Iterações:} 500, 1000, 1500
 \end{itemize}
 
-Essas combinações foram escolhidas para simular diferentes cenários de complexidade computacional, permitindo uma análise detalhada do desempenho de cada técnica em condições variadas. Os resultados focam nas métricas de tempo de execução da simulação.
-
-O ambiente de execução de todos os algoritmos (exceto do algoritmo em CUDA) tem as seguintes características:
-
-\begin{itemize}
-    \item Máquina: Notebook IdeaPad Lenovo
-    \item CPU: Ryzen 5 5600G
-    \item Memória RAM: 12 GB
-    \item Compilador: GCC
-\end{itemize}
 \subsection{Resultados do Algoritmo Compilado com a Flag -O3}
 
 \begin{figure}[H]
@@ -77,6 +65,42 @@ No gráfico abaixo de SpeedUp, comparando cada caso com um tamanho de bloco dife
     \includegraphics[width=1\linewidth]{../assets/CUDA - SpeedUp.png}
 \end{figure}
 
+\subsection{Resultados da Concentração e de Assertividade}
+
+Abaixo, é apresentado os resultados da concentração no meio em qualquer grade da matriz em relação a quantidade de iterações.
+
+\begin{table}[H]
+    \centering
+    \caption{Resultados Corretos da Concentração (Com Matriz de Tamanho 2000, 4000 ou 6000)}
+    \label{tab:exemplo}
+    \begin{tabular}{lcc}
+        \toprule
+        \textbf{Iterações} & Concentração no Meio \\
+        \midrule
+        500                & 0.216512             \\
+        1000               & 0.095045             \\
+        1500               & 0.058997             \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+Nos próximos três gráficos, é apresentado em visão de dispersão os resultados alcançados pelos métodos em cada quantidade de iterações, apesar de o algoritmo do CUDA apenas entrar no caso de 1000 iterações, todos eles tem apresentado resultados iguais ao original, todavia, alguns casos com o algoritmo do MPI estiveram fora do padrão na terceira casa do decimal.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{../assets/A.png}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{../assets/B.png}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{../assets/C.png}
+\end{figure}
+
 \subsection{Comparativo com todos os Métodos}
 
 \begin{figure}[H]
@@ -87,3 +111,5 @@ No gráfico abaixo de SpeedUp, comparando cada caso com um tamanho de bloco dife
 Os resultados obtidos evidenciam que a implementação CUDA apresentou o melhor desempenho, mas houve uma falha na obtenção de mais dados, o que limitou a análise mais aprofundada da escalabilidade da solução.
 
 Entre as otimizações com CPU, OpenMPI apresentou o melhor resultado utilizando de 6 processos. E curiosamente, a versão sequencial otimizada com a flag -O3 do GCC superou a implementação OpenMP com 12 threads. Isso sugere que a otimização agressiva aplicada pelo compilador, foi suficiente para melhorar o desempenho sem a necessidade do overhead de gerenciamento de múltiplas threads, indicando que problemas de itensivo iteração pode ser otimizados em compilação.
+
+Por fim, os resultados dos modelos tem sido extremamente fiéis ao resultado original, todavia, há alguns casos que o algoritmo do MPI tem errado na concentração final no meio da grade, tal erro pode ser por conta de algum problema de sincronização que ocorreu durante a execução.

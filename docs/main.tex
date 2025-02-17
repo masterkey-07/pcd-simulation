@@ -1,11 +1,12 @@
 \documentclass[12pt]{article}
-\usepackage{sbc-template}
-\usepackage{import}
-\usepackage{amssymb}
-\usepackage{graphicx,url,float}
-\usepackage[portuguese]{babel}
 \usepackage[utf8]{inputenc}  
-     
+\usepackage{amssymb}
+\usepackage{booktabs}
+\usepackage{graphicx,url,float}
+\usepackage{import}
+\usepackage{sbc-template}
+\usepackage[brazil]{babel}
+
 % \sloppy
 
 \title{Otimização na Simulação e Análise de Modelos de Difusão de Contaminantes em Água}
@@ -19,21 +20,15 @@
 
 \maketitle
 
-\begin{abstract}
-  This work aims to create a simulation that models the diffusion of contaminants in a body of water (such as a lake or river), applying concepts of parallelism to speed up the calculation and observe the behavior of pollutants over time. The project will investigate the impact of OpenMP, CUDA and MPI on model runtime and accuracy. In this document we will address the implementation in OpenMP, parallelizing the code provided in the project proposal.
-\end{abstract}
-
-\begin{resumo}
-  Este trabalho tem como objetivo criar uma simulação que modele a difusão de contaminantes em um corpo d'água (como um lago ou rio), aplicando conceitos de paralelismo para acelerar o cálculo e observar o comportamento de poluentes ao longo do tempo. O projeto investigará o impacto de OpenMP, CUDA e MPI no tempo de execução e na precisão do modelo.
-\end{resumo}
+\import{./src/}{resume.tex}
 
 \import{./src/}{introduction.tex}
 
-\import{./src/}{objective.tex}
+\import{./src/}{problem.tex}
 
-\import{./src/}{methodology.tex}
+\import{./src/}{implementation.tex}
 
-\import{./src/}{result-and-discussion.tex}
+\import{./src/}{results.tex}
 
 \import{./src/}{conclusion.tex}
 
